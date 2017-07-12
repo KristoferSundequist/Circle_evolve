@@ -1,0 +1,209 @@
+<html>
+
+<head>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+    <canvas id="myCanvas" width="1300" height="600" style="border:1px solid #000000;"></canvas>
+    <script>
+        var popsize = 50;
+        var mutation = gaussian(0, 4);
+
+
+        var canvas = document.getElementById('myCanvas');
+        var context = canvas.getContext('2d');
+
+        function clearCanvas() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawcircle(x, y, s, color) {
+            //clearCanvas();
+            context.beginPath();
+            context.arc(x, y, s, 0, 2 * Math.PI, false);
+            context.fillStyle = color;
+            context.fill();
+            context.lineWidth = 0;
+            context.strokeStyle = '#003300';
+            context.stroke();
+        }
+
+        //https://stackoverflow.com/questions/25582882/javascript-math-random-normal-distribution-gaussian-bell-curve
+        // returns a gaussian random function with the given mean and stdev.
+        function gaussian(mean, stdev) {
+            var y2;
+            var use_last = false;
+            return function() {
+                var y1;
+                if (use_last) {
+                    y1 = y2;
+                    use_last = false;
+                } else {
+                    var x1, x2, w;
+                    do {
+                        x1 = 2.0 * Math.random() - 1.0;
+                        x2 = 2.0 * Math.random() - 1.0;
+                        w = x1 * x1 + x2 * x2;
+                    } while (w >= 1.0);
+                    w = Math.sqrt((-2.0 * Math.log(w)) / w);
+                    y1 = x1 * w;
+                    y2 = x2 * w;
+                    use_last = true;
+                }
+
+                var retval = mean + stdev * y1;
+                return retval;
+            }
+        }
+
+        function randomIntFromInterval(min, max) {
+            return Math.floor(Math.random() * (max - min + 1) + min);
+        }
+
+        function intersect(ax, ay, as, bx, by, bs) {
+            //thisSnake == a
+            //snakes[i] == b
+            if (as + bs > Math.sqrt(Math.pow(ax - bx, 2) + Math.pow(ay - by, 2))) {
+                return true;
+            }
+            return false;
+        }
+
+        var environment = [];
+        //environment.push([500, 80, 100, 'red']);
+        //environment.push([300, 350, 100, 'red']);
+        environment.push([600, 350, 20, 'red']);
+        //environment.push([1000, 100, 50, 'red']);
+        //environment.push([800, 350, 50, 'red']);
+        //environment.push([1100, 400, 50, 'red']);
+
+        //gets max radius of x,y so that circle doesnt intersect with environment
+        function expand(x, y) {
+            var cur_radius = 0;
+            while (true) {
+                for (var i = 0; i < environment.length; i++) {
+                    if (intersect(x, y, cur_radius, environment[i][0], environment[i][1], environment[i][2], environment[i][3])) {
+                        return cur_radius;
+                    }
+                }
+                if (x + cur_radius > canvas.width || x - cur_radius < 0 || y + cur_radius > canvas.height || y - cur_radius < 0) {
+                    return cur_radius;
+                }
+                cur_radius++;
+            }
+        }
+
+        var population = [];
+
+        //init population randomly
+        for (var p = 0; p < popsize; p++) {
+            var px = Math.floor((Math.random() * canvas.width) + 1);
+            var py = Math.floor((Math.random() * canvas.height) + 1);
+            population[p] = [px, py, expand(px, py), 'green'];
+        }
+
+        function render() {
+            clearCanvas();
+            for (var i = 0; i < population.length; i++) {
+                drawcircle(population[i][0], population[i][1], population[i][2], population[i][3]);
+            }
+            for (var i = 0; i < environment.length; i++) {
+                drawcircle(environment[i][0], environment[i][1], environment[i][2], environment[i][3]);
+            }
+        }
+
+        //sample from categorical
+        function getParents() {
+            var sum = 0;
+            var parents = [];
+            for (var i = 0; i < population.length; i++) {
+                sum += population[i][2];
+            }
+            for (var i = 0; i < population.length; i++) {
+                var rand = Math.floor((Math.random() * sum) + 1);
+                var cur = 0;
+                for (var j = 0; j < population.length; j++) {
+                    cur += population[j][2];
+                    if (rand < cur) {
+                        parents[i] = j;
+                        break;
+                    }
+                }
+            }
+            return parents;
+        }
+
+
+
+        //The population is views as a categorical distribution based on the sizes of the circles
+        //Next populations (x,y) is sampled from the old based on this distribution + some mutation
+        //One circle is also just randomly spawned to enable local maxima escape
+        function update() {
+            var parents = getParents();
+            var backup = []
+            for (var i = 0; i < population.length; i++) {
+                backup.push([population[i][0], population[i][1]])
+            }
+
+            for (var i = 0; i < population.length; i++) {
+                if (typeof backup[parents[i]] !== 'undefined') {
+                    population[i][0] = backup[parents[i]][0] + mutation();
+                    population[i][1] = backup[parents[i]][1] + mutation();
+                    population[i][2] = expand(population[i][0], population[i][1]);
+                }
+            }
+            population[population.length - 1][0] = randomIntFromInterval(0, canvas.width);
+            population[population.length - 1][1] = randomIntFromInterval(0, canvas.height);
+            population[population.length - 1][2] = expand(population[population.length - 1][0], population[population.length - 1][1]);
+        }
+
+        function newGen() {
+            update();
+            render();
+        }
+
+        function k_gen() {
+            for (var i = 0; i < 1000; i++) {
+                update();
+            }
+            render();
+        }
+
+
+        function brute_force() {
+            var biggestx = 0;
+            var biggesty = 0;
+            var biggest_rad = 0;
+            for (var x = 0; x < canvas.width; x++) {
+                for (var y = 0; y < canvas.width; y++) {
+                    var current_rad = expand(x, y);
+                    if (current_rad > biggest_rad) {
+                        biggest_rad = current_rad;
+                        biggestx = x;
+                        biggesty = y;
+                    }
+                }
+            }
+            return [biggestx, biggesty, biggest_rad];
+        }
+
+        function render_brute_force() {
+            var biggest = brute_force();
+            drawcircle(biggest[0], biggest[1], biggest[2], 'yellow');
+        }
+
+        render();
+
+        canvas.addEventListener('mousedown', function(e) {
+            environment.push([e.clientX, e.clientY, 50, 'red']);
+            render();
+        }, false);
+    </script>
+    <button onclick="newGen()">Next generation</button>
+    <button onclick="k_gen()">1k generations</button>
+    <button onclick="render_brute_force()">Brute force solve</button>
+    <br>Click on canvas to insert obstacle in environment.
+</body>
+
+</html>
