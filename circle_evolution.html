@@ -9,7 +9,6 @@
         var popsize = 50;
         var mutation = gaussian(0, 4);
 
-
         var canvas = document.getElementById('myCanvas');
         var context = canvas.getContext('2d');
 
@@ -70,19 +69,14 @@
         }
 
         var environment = [];
-        //environment.push([500, 80, 100, 'red']);
-        //environment.push([300, 350, 100, 'red']);
-        environment.push([600, 350, 20, 'red']);
-        //environment.push([1000, 100, 50, 'red']);
-        //environment.push([800, 350, 50, 'red']);
-        //environment.push([1100, 400, 50, 'red']);
-
+        environment.push([100, 350, 20, 'red']);
+        
         //gets max radius of x,y so that circle doesnt intersect with environment
         function expand(x, y) {
             var cur_radius = 0;
             while (true) {
                 for (var i = 0; i < environment.length; i++) {
-                    if (intersect(x, y, cur_radius, environment[i][0], environment[i][1], environment[i][2], environment[i][3])) {
+                    if (intersect(x, y, cur_radius, environment[i][0], environment[i][1], environment[i][2])) {
                         return cur_radius;
                     }
                 }
@@ -152,16 +146,20 @@
                     population[i][2] = expand(population[i][0], population[i][1]);
                 }
             }
+            
+            //random mutation
             population[population.length - 1][0] = randomIntFromInterval(0, canvas.width);
             population[population.length - 1][1] = randomIntFromInterval(0, canvas.height);
             population[population.length - 1][2] = expand(population[population.length - 1][0], population[population.length - 1][1]);
         }
 
+        //next generation wrapper
         function newGen() {
             update();
             render();
         }
 
+        //next 1k generations wrapper
         function k_gen() {
             for (var i = 0; i < 1000; i++) {
                 update();
@@ -187,6 +185,7 @@
             return [biggestx, biggesty, biggest_rad];
         }
 
+        //brute force wrapper
         function render_brute_force() {
             var biggest = brute_force();
             drawcircle(biggest[0], biggest[1], biggest[2], 'yellow');
@@ -194,6 +193,7 @@
 
         render();
 
+        //add obstacle
         canvas.addEventListener('mousedown', function(e) {
             environment.push([e.clientX, e.clientY, 50, 'red']);
             render();
