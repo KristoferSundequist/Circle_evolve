@@ -6,7 +6,7 @@
 <body>
     <canvas id="myCanvas" width="1300" height="600" style="border:1px solid #000000;"></canvas>
     <script>
-        var popsize = 50;
+        var popsize = 20;
         var mutation = gaussian(0, 4);
 
         var canvas = document.getElementById('myCanvas');
@@ -195,7 +195,7 @@
 
         //add obstacle
         canvas.addEventListener('mousedown', function(e) {
-            environment.push([e.clientX, e.clientY, 50, 'red']);
+            environment.push([e.clientX, e.clientY, 10, 'red']);
             render();
         }, false);
     </script>
