@@ -6,11 +6,11 @@
 <body>
     <canvas id="myCanvas" width="1300" height="600" style="border:1px solid #000000;"></canvas>
     <script>
-        var popsize = 20;
-        var mutation = gaussian(0, 4);
+        const popsize = 20;
+        const mutation = gaussian(0, 4);
 
-        var canvas = document.getElementById('myCanvas');
-        var context = canvas.getContext('2d');
+        const canvas = document.getElementById('myCanvas');
+        const context = canvas.getContext('2d');
 
         function clearCanvas() {
             context.clearRect(0, 0, canvas.width, canvas.height);
@@ -60,8 +60,6 @@
         }
 
         function intersect(ax, ay, as, bx, by, bs) {
-            //thisSnake == a
-            //snakes[i] == b
             if (as + bs > Math.sqrt(Math.pow(ax - bx, 2) + Math.pow(ay - by, 2))) {
                 return true;
             }
@@ -98,21 +96,18 @@
 
         function render() {
             clearCanvas();
-            for (var i = 0; i < population.length; i++) {
-                drawcircle(population[i][0], population[i][1], population[i][2], population[i][3]);
+            for(p of population){
+                drawcircle(p[0], p[1], p[2], p[3]);
             }
-            for (var i = 0; i < environment.length; i++) {
-                drawcircle(environment[i][0], environment[i][1], environment[i][2], environment[i][3]);
+            for(e of environment){
+                drawcircle(e[0], e[1], e[2], e[3]);
             }
         }
 
         //sample from categorical
         function getParents() {
-            var sum = 0;
+            const sum = population.reduce((acc,cur) => acc+cur[2],0);
             var parents = [];
-            for (var i = 0; i < population.length; i++) {
-                sum += population[i][2];
-            }
             for (var i = 0; i < population.length; i++) {
                 var rand = Math.floor((Math.random() * sum) + 1);
                 var cur = 0;
@@ -134,10 +129,7 @@
         //One circle is also just randomly spawned to enable local maxima escape
         function update() {
             var parents = getParents();
-            var backup = []
-            for (var i = 0; i < population.length; i++) {
-                backup.push([population[i][0], population[i][1]])
-            }
+            var backup = population.map(p => p.slice());
 
             for (var i = 0; i < population.length; i++) {
                 if (typeof backup[parents[i]] !== 'undefined') {
