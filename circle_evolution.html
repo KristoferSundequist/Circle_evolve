@@ -69,18 +69,27 @@
         var environment = [];
         environment.push([100, 350, 20, 'red']);
         
+        function fitness(x,y,r){
+            for (var i = 0; i < environment.length; i++) {
+                if (intersect(x, y, r, environment[i][0], environment[i][1], environment[i][2])) {
+                    return 0;
+                }
+                if (x + r > canvas.width || x - r < 0 || y + r > canvas.height || y - r < 0) {
+                    return 0;
+                }
+            }
+            return r;
+        }
+        
         //gets max radius of x,y so that circle doesnt intersect with environment
         function expand(x, y) {
-            var cur_radius = 0;
+            var cur_radius = 1;
             while (true) {
-                for (var i = 0; i < environment.length; i++) {
-                    if (intersect(x, y, cur_radius, environment[i][0], environment[i][1], environment[i][2])) {
-                        return cur_radius;
-                    }
-                }
-                if (x + cur_radius > canvas.width || x - cur_radius < 0 || y + cur_radius > canvas.height || y - cur_radius < 0) {
+                if(fitness(x,y,cur_radius) == 0){
                     return cur_radius;
                 }
+                
+                //else
                 cur_radius++;
             }
         }
@@ -91,7 +100,8 @@
         for (var p = 0; p < popsize; p++) {
             var px = Math.floor((Math.random() * canvas.width) + 1);
             var py = Math.floor((Math.random() * canvas.height) + 1);
-            population[p] = [px, py, expand(px, py), 'green'];
+            var r = Math.floor((Math.random() * 200) + 1);
+            population[p] = [px, py, r, 'green'];
         }
 
         function render() {
@@ -103,6 +113,7 @@
                 drawcircle(e[0], e[1], e[2], e[3]);
             }
         }
+        
 
         //sample from categorical
         function getParents() {
@@ -135,14 +146,20 @@
                 if (typeof backup[parents[i]] !== 'undefined') {
                     population[i][0] = backup[parents[i]][0] + mutation();
                     population[i][1] = backup[parents[i]][1] + mutation();
-                    population[i][2] = expand(population[i][0], population[i][1]);
+                    population[i][2] = backup[parents[i]][2] + mutation();
+                    
+                    population[i][2] = fitness(population[i][0],population[i][1],population[i][2]);
+
                 }
             }
             
             //random mutation
             population[population.length - 1][0] = randomIntFromInterval(0, canvas.width);
             population[population.length - 1][1] = randomIntFromInterval(0, canvas.height);
-            population[population.length - 1][2] = expand(population[population.length - 1][0], population[population.length - 1][1]);
+            population[population.length - 1][2] = randomIntFromInterval(0,200);
+            population[population.length - 1][2] = fitness(population[population.length - 1][0],population[population.length - 1][1],population[population.length - 1][2]);
+            
+            
         }
 
         //next generation wrapper
