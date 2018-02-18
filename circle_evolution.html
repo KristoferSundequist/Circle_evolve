@@ -162,6 +162,44 @@
             
         }
 
+		function crossover_update() {
+			population.sort((a,b) => b[2]-a[2]);
+			let parents = getParents();
+			let backup = population.map(p => p.slice());
+			
+			for(var i = 0; i < population.length; i++){
+				//leave some
+				if(i >= 1){
+					let cross = [Math.round(Math.random()), Math.round(Math.random()), Math.round(Math.random())];
+					
+					for (j = 0; j < 3; j++){
+						if(cross[j]){
+							population[i][j] = backup[parents[i]][j]
+						}
+						population[i][j] += mutation();
+					}
+				}
+				population[i][2] = fitness(population[i][0],population[i][1],population[i][2]);
+			}
+			
+			//random mutation
+            population[population.length - 1][0] = randomIntFromInterval(0, canvas.width);
+            population[population.length - 1][1] = randomIntFromInterval(0, canvas.height);
+            population[population.length - 1][2] = randomIntFromInterval(0,200);
+            population[population.length - 1][2] = fitness(population[population.length - 1][0],population[population.length - 1][1],population[population.length - 1][2]);
+			
+			for(var i = 0; i < population.length; i++){
+				if(population[i][2] < 0){
+					population[i][2] = 0;
+				}
+			}
+		}
+		
+		function crossover(){
+			crossover_update();
+			render();
+		}
+		
         //next generation wrapper
         function newGen() {
             update();
@@ -175,7 +213,6 @@
             }
             render();
         }
-
 
         function brute_force() {
             var biggestx = 0;
@@ -208,9 +245,11 @@
             render();
         }, false);
     </script>
+	<br>
     <button onclick="newGen()">Next generation</button>
     <button onclick="k_gen()">1k generations</button>
-    <button onclick="render_brute_force()">Brute force solve</button>
+    <button onclick="crossover()">Next gen with crossover</button>
+	<button onclick="render_brute_force()">Brute force solve</button>
     <br>Click on canvas to insert obstacle in environment.
 </body>
 
